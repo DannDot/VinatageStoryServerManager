@@ -20,22 +20,31 @@ PROJECT_DIR=$(pwd)
 echo "Updating as user: $USER_NAME"
 echo "Project directory: $PROJECT_DIR"
 
+# Helper function to run command as user
+run_as_user() {
+    if [ "$USER_NAME" = "root" ]; then
+        "$@"
+    else
+        sudo -u "$USER_NAME" "$@"
+    fi
+}
+
 # 1. Pull latest changes
 echo "Pulling latest changes from git..."
 # We need to run git pull as the user to avoid messing up file permissions
-sudo -u "$USER_NAME" git pull
+run_as_user git pull
 
 # 2. Rebuild Client
 echo "Updating Client..."
 cd "$PROJECT_DIR/client"
-sudo -u "$USER_NAME" npm install
-sudo -u "$USER_NAME" npm run build
+run_as_user npm install
+run_as_user npm run build
 
 # 3. Rebuild Server
 echo "Updating Server..."
 cd "$PROJECT_DIR/server"
-sudo -u "$USER_NAME" npm install
-sudo -u "$USER_NAME" npm run build
+run_as_user npm install
+run_as_user npm run build
 
 # 4. Restart Service
 echo "Restarting VS Manager service..."

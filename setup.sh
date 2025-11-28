@@ -27,29 +27,45 @@ apt-get update || echo "Warning: apt-get update failed, attempting to install de
 apt-get install -y curl wget git nginx certbot python3-certbot-nginx unzip libicu-dev acl build-essential
 
 # 2. Install Node.js (if not installed)
-if ! command -v node &> /dev/null; then
-    echo "Node.js not found. Installing Node.js 20..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+    echo "Node.js or npm not found. Installing Node.js 20..."
+    # Try to install from nodesource
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - || echo "Nodesource setup failed, trying default repos..."
     apt-get install -y nodejs
+    
+    # If npm is still not found (some distros separate it), install it explicitly
+    if ! command -v npm &> /dev/null; then
+        echo "npm not found after nodejs install. Installing npm package..."
+        apt-get install -y npm
+    fi
 else
-    echo "Node.js is already installed."
+    echo "Node.js and npm are already installed."
 fi
 
 # 3. Install Project Dependencies & Build
 echo "Installing project dependencies and building..."
 
+# Helper function to run command as user
+run_as_user() {
+    if [ "$USER_NAME" = "root" ]; then
+        "$@"
+    else
+        sudo -u "$USER_NAME" "$@"
+    fi
+}
+
 # Client
 echo "Building Client..."
 cd "$PROJECT_DIR/client"
 # Run npm as the actual user to avoid permission issues later, or fix permissions after
-sudo -u "$USER_NAME" npm install
-sudo -u "$USER_NAME" npm run build
+run_as_user npm install
+run_as_user npm run build
 
 # Server
 echo "Building Server..."
 cd "$PROJECT_DIR/server"
-sudo -u "$USER_NAME" npm install
-sudo -u "$USER_NAME" npm run build
+run_as_user npm install
+run_as_user npm run build
 
 # Return to root
 cd "$PROJECT_DIR"
