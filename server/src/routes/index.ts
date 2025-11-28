@@ -6,6 +6,7 @@ import { modController } from '../controllers/ModController';
 import { backupController } from '../controllers/BackupController';
 import { updateController } from '../controllers/UpdateController';
 import { whitelistController } from '../controllers/WhitelistController';
+import { playerController } from '../controllers/PlayerController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -62,5 +63,8 @@ router.get('/instances/:id/whitelist', (req, res) => whitelistController.getWhit
 router.post('/instances/:id/whitelist', (req, res) => whitelistController.addPlayer(req, res));
 router.delete('/instances/:id/whitelist/:username', (req, res) => whitelistController.removePlayer(req, res));
 router.post('/instances/:id/whitelist/mode', (req, res) => whitelistController.setMode(req, res));
+
+// Player routes
+router.get('/players', (req, res) => playerController.getPlayers(req, res));
 
 export default router;

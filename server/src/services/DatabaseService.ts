@@ -52,6 +52,19 @@ export class DatabaseService {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Create players table
+    await this.db.exec(`
+      CREATE TABLE IF NOT EXISTS players (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        uid TEXT,
+        ip TEXT,
+        last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_online INTEGER DEFAULT 0,
+        total_playtime INTEGER DEFAULT 0
+      )
+    `);
   }
 
   async getSetting(key: string): Promise<string | null> {
@@ -110,6 +123,45 @@ export class DatabaseService {
   async deleteInstance(id: number): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
     await this.db.run('DELETE FROM server_instances WHERE id = ?', id);
+  }
+
+  // Player methods
+  async upsertPlayer(name: string, uid: string | null, ip: string | null, isOnline: boolean): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    const existing = await this.db.get('SELECT * FROM players WHERE name = ?', name);
+    
+    if (existing) {
+      await this.db.run(
+        `UPDATE players SET 
+         uid = COALESCE(?, uid), 
+         ip = COALESCE(?, ip), 
+         is_online = ?, 
+         last_seen = CURRENT_TIMESTAMP 
+         WHERE name = ?`,
+        uid, ip, isOnline ? 1 : 0, name
+      );
+    } else {
+      await this.db.run(
+        'INSERT INTO players (name, uid, ip, is_online) VALUES (?, ?, ?, ?)',
+        name, uid, ip, isOnline ? 1 : 0
+      );
+    }
+  }
+
+  async setPlayerOffline(name: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    await this.db.run('UPDATE players SET is_online = 0, last_seen = CURRENT_TIMESTAMP WHERE name = ?', name);
+  }
+
+  async setAllPlayersOffline(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    await this.db.run('UPDATE players SET is_online = 0');
+  }
+
+  async getPlayers(): Promise<any[]> {
+    if (!this.db) throw new Error('Database not initialized');
+    return await this.db.all('SELECT * FROM players ORDER BY is_online DESC, last_seen DESC');
   }
 }
 

@@ -11,6 +11,7 @@ import ModsPage from './pages/ModsPage';
 import BackupsPage from './pages/BackupsPage';
 import StatsPage from './pages/StatsPage';
 import WhitelistPage from './pages/WhitelistPage';
+import UsersPage from './pages/UsersPage';
 import { SocketProvider } from './context/SocketContext';
 import { ServerProvider } from './context/ServerContext';
 
@@ -70,6 +71,7 @@ function App() {
               <Route path="/mods" element={<ModsPage token={token} onLogout={handleLogout} />} />
               <Route path="/backups" element={<BackupsPage token={token} onLogout={handleLogout} />} />
               <Route path="/whitelist" element={<WhitelistPage token={token} />} />
+              <Route path="/users" element={<UsersPage token={token} />} />
               <Route path="/stats" element={<StatsPage token={token} onLogout={handleLogout} />} />
               <Route path="/settings" element={<SettingsPage token={token} onLogout={handleLogout} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
