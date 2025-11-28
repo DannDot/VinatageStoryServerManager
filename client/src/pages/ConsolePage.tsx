@@ -8,7 +8,7 @@ interface ConsolePageProps {
   onLogout: () => void;
 }
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 export const ConsolePage: React.FC<ConsolePageProps> = ({ token, onLogout }) => {
   const { logs, status } = useSocket();

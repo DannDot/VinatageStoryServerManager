@@ -21,7 +21,7 @@ export const ChangePassword: React.FC<ChangePasswordProps> = ({ token, onSuccess
     }
 
     try {
-      const res = await fetch('http://localhost:3001/api/change-password', {
+      const res = await fetch('/api/change-password', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

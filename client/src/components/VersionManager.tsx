@@ -13,7 +13,7 @@ interface VersionManagerProps {
   onLogout: () => void;
 }
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 export const VersionManager: React.FC<VersionManagerProps> = ({ token, onLogout }) => {
   const [versions, setVersions] = useState<Version[]>([]);

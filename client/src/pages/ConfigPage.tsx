@@ -7,7 +7,7 @@ interface ConfigPageProps {
   onLogout: () => void;
 }
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface Role {
   Code: string;

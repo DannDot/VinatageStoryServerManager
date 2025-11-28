@@ -40,12 +40,12 @@ export const InstanceManager: React.FC<InstanceManagerProps> = ({ token, onSelec
   }, []);
 
   const fetchInstances = async () => {
-    const res = await authFetch('http://localhost:3001/api/instances');
+    const res = await authFetch('/api/instances');
     if (res.ok) setInstances(await res.json());
   };
 
   const fetchVersions = async () => {
-    const res = await authFetch('http://localhost:3001/api/versions');
+    const res = await authFetch('/api/versions');
     if (res.ok) setVersions(await res.json());
   };
 
@@ -53,7 +53,7 @@ export const InstanceManager: React.FC<InstanceManagerProps> = ({ token, onSelec
     e.preventDefault();
     if (!newInstanceName || !newInstanceVersion) return;
 
-    const res = await authFetch('http://localhost:3001/api/instances', {
+    const res = await authFetch('/api/instances', {
       method: 'POST',
       body: JSON.stringify({ name: newInstanceName, version: newInstanceVersion })
     });
@@ -70,7 +70,7 @@ export const InstanceManager: React.FC<InstanceManagerProps> = ({ token, onSelec
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this server instance? All data will be lost.')) return;
 
-    const res = await authFetch(`http://localhost:3001/api/instances/${id}`, {
+    const res = await authFetch(`/api/instances/${id}`, {
       method: 'DELETE'
     });
 
