@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Server, Settings, LogOut, Terminal, HardDrive, FileJson, Package, Archive } from 'lucide-react';
+import { Menu, X, Server, Settings, LogOut, Terminal, HardDrive, FileJson, Package, Archive, ArrowUpCircle } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,7 +9,59 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    checkUpdate();
+  }, []);
+
+  const checkUpdate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/update/check', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.updateAvailable) {
+          setUpdateAvailable(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!confirm('Are you sure you want to update the server manager? The server will restart.')) return;
+    
+    setUpdating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/update/perform', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        alert('Update started. The page will reload in 30 seconds.');
+        setTimeout(() => {
+          window.location.reload();
+        }, 30000);
+      } else {
+        alert('Failed to start update');
+        setUpdating(false);
+      }
+    } catch (error) {
+      console.error('Error starting update:', error);
+      alert('Failed to start update');
+      setUpdating(false);
+    }
+  };
 
   const navigation = [
     { name: 'Console', href: '/', icon: Terminal },
@@ -59,6 +111,16 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
               <LogOut className="h-5 w-5" />
               <span>Logout</span>
             </button>
+            {updateAvailable && (
+              <button
+                onClick={handleUpdate}
+                disabled={updating}
+                className="flex items-center space-x-2 p-2 rounded hover:bg-gray-700 text-green-400 w-full"
+              >
+                <ArrowUpCircle className={`h-5 w-5 ${updating ? 'animate-spin' : ''}`} />
+                <span>{updating ? 'Updating...' : 'Update Available'}</span>
+              </button>
+            )}
           </nav>
         </div>
       )}
@@ -82,6 +144,16 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
               <span>{item.name}</span>
             </Link>
           ))}
+          {updateAvailable && (
+            <button
+              onClick={handleUpdate}
+              disabled={updating}
+              className="flex items-center space-x-2 p-2 rounded hover:bg-gray-700 text-green-400 w-full mt-4"
+            >
+              <ArrowUpCircle className={`h-5 w-5 ${updating ? 'animate-spin' : ''}`} />
+              <span>{updating ? 'Updating...' : 'Update Available'}</span>
+            </button>
+          )}
         </nav>
         <div className="p-4 border-t border-gray-700">
           <button

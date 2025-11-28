@@ -4,6 +4,7 @@ import { ServerController } from '../controllers/ServerController';
 import { AuthController } from '../controllers/AuthController';
 import { modController } from '../controllers/ModController';
 import { backupController } from '../controllers/BackupController';
+import { updateController } from '../controllers/UpdateController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -50,5 +51,9 @@ router.get('/instances/:id/backups', (req, res) => backupController.getBackups(r
 router.post('/instances/:id/backups', (req, res) => backupController.createBackup(req, res));
 router.post('/instances/:id/backups/restore', (req, res) => backupController.restoreBackup(req, res));
 router.delete('/instances/:id/backups/:filename', (req, res) => backupController.deleteBackup(req, res));
+
+// Update routes
+router.get('/update/check', (req, res) => updateController.checkUpdate(req, res));
+router.post('/update/perform', (req, res) => updateController.performUpdate(req, res));
 
 export default router;
