@@ -2,6 +2,9 @@ import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { EventEmitter } from 'events';
+import { DotnetService } from './DotnetService';
+
+const dotnetService = new DotnetService();
 
 export class ProcessService extends EventEmitter {
   private process: ChildProcess | null = null;
@@ -27,9 +30,17 @@ export class ProcessService extends EventEmitter {
 
     console.log(`Starting server from ${serverDir} with data path ${dataPath}`);
 
+    const dotnetPath = dotnetService.getDotnetPath();
+    const env = {
+        ...process.env,
+        DOTNET_ROOT: dotnetPath,
+        PATH: `${dotnetPath}:${process.env.PATH}`
+    };
+
     this.process = spawn(executablePath, ['--dataPath', dataPath], {
       cwd: serverDir,
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env
     });
 
     this.process.stdout?.on('data', (data) => {

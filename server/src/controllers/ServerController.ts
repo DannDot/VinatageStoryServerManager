@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 import { VersionService } from '../services/VersionService';
 import { ProcessService } from '../services/ProcessService';
+import { DotnetService } from '../services/DotnetService';
 import path from 'path';
 import fs from 'fs';
 
 const versionService = new VersionService();
+const dotnetService = new DotnetService();
 export const processService = new ProcessService();
 
 export class ServerController {
@@ -44,6 +46,9 @@ export class ServerController {
     if (!version) return res.status(400).json({ error: 'Version is required' });
 
     try {
+      // Ensure .NET is installed
+      await dotnetService.installDotnet();
+
       const dataPath = path.join(process.cwd(), 'server-data');
       if (!fs.existsSync(dataPath)) {
           fs.mkdirSync(dataPath);

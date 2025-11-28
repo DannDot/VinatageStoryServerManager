@@ -3,8 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { DotnetService } from './DotnetService';
 
 const execAsync = promisify(exec);
+const dotnetService = new DotnetService();
 
 export interface VersionInfo {
   version: string;
