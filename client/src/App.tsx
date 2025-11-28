@@ -7,6 +7,7 @@ import { ConsolePage } from './pages/ConsolePage';
 import { InstancesPage } from './pages/InstancesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ConfigPage } from './pages/ConfigPage';
+import ModsPage from './pages/ModsPage';
 import { SocketProvider } from './context/SocketContext';
 import { ServerProvider } from './context/ServerContext';
 
@@ -57,12 +58,13 @@ function App() {
   return (
     <SocketProvider>
       <ServerProvider>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Layout onLogout={handleLogout}>
             <Routes>
               <Route path="/" element={<ConsolePage token={token} onLogout={handleLogout} />} />
               <Route path="/instances" element={<InstancesPage token={token} onLogout={handleLogout} />} />
               <Route path="/config" element={<ConfigPage token={token} onLogout={handleLogout} />} />
+              <Route path="/mods" element={<ModsPage token={token} onLogout={handleLogout} />} />
               <Route path="/settings" element={<SettingsPage token={token} onLogout={handleLogout} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
