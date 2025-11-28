@@ -44,9 +44,22 @@ export class WhitelistService {
     try {
       const content = fs.readFileSync(configPath, 'utf-8');
       const config = JSON.parse(content);
-      // Check both possible keys, though WhitelistMode seems to be the newer one (0=off, 1=on?)
-      // Based on logs: "disable the whitelist mode with '/serverconfig whitelistmode off'"
-      return config.OnlyWhitelisted === true || config.WhitelistMode === 1 || config.WhitelistMode === true;
+      
+      const mode = config.WhitelistMode;
+      
+      // Handle string values
+      if (typeof mode === 'string') {
+        const lower = mode.toLowerCase();
+        if (lower === 'on' || lower === 'default') return true;
+        if (lower === 'off') return false;
+      }
+      
+      // Handle number values (0=off, 1=on)
+      if (mode === 1) return true;
+      if (mode === 0) return false;
+      
+      // Fallback to OnlyWhitelisted if WhitelistMode is not set or unknown
+      return config.OnlyWhitelisted === true;
     } catch (error) {
       console.error('Error reading config:', error);
       return false;
