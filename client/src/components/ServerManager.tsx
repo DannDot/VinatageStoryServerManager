@@ -19,6 +19,7 @@ export const ServerManager: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [command, setCommand] = useState('');
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,6 +91,22 @@ export const ServerManager: React.FC = () => {
     }
   };
 
+  const sendCommand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!command) return;
+    
+    try {
+      await fetch(`${API_URL}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
+      });
+      setCommand('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Vintage Story Server Manager</h1>
@@ -147,6 +164,24 @@ export const ServerManager: React.FC = () => {
         ))}
         <div ref={logsEndRef} />
       </div>
+
+      <form onSubmit={sendCommand} className="mt-4 flex gap-2">
+        <input
+          type="text"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
+          placeholder="Enter server command..."
+          className="flex-1 border p-2 rounded shadow-sm"
+          disabled={status !== 'running'}
+        />
+        <button 
+          type="submit" 
+          disabled={status !== 'running' || !command}
+          className="bg-gray-800 text-white px-6 py-2 rounded hover:bg-gray-700 disabled:opacity-50"
+        >
+          Send
+        </button>
+      </form>
     </div>
   );
 };
