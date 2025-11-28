@@ -5,6 +5,7 @@ import { AuthController } from '../controllers/AuthController';
 import { modController } from '../controllers/ModController';
 import { backupController } from '../controllers/BackupController';
 import { updateController } from '../controllers/UpdateController';
+import { whitelistController } from '../controllers/WhitelistController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -55,5 +56,11 @@ router.delete('/instances/:id/backups/:filename', (req, res) => backupController
 // Update routes
 router.get('/update/check', (req, res) => updateController.checkUpdate(req, res));
 router.post('/update/perform', (req, res) => updateController.performUpdate(req, res));
+
+// Whitelist routes
+router.get('/instances/:id/whitelist', (req, res) => whitelistController.getWhitelist(req, res));
+router.post('/instances/:id/whitelist', (req, res) => whitelistController.addPlayer(req, res));
+router.delete('/instances/:id/whitelist/:username', (req, res) => whitelistController.removePlayer(req, res));
+router.post('/instances/:id/whitelist/mode', (req, res) => whitelistController.setMode(req, res));
 
 export default router;
