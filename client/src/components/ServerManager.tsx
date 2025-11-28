@@ -13,7 +13,12 @@ interface Version {
   installed: boolean;
 }
 
-export const ServerManager: React.FC = () => {
+interface ServerManagerProps {
+  token: string;
+  onLogout: () => void;
+}
+
+export const ServerManager: React.FC<ServerManagerProps> = ({ token, onLogout }) => {
   const [versions, setVersions] = useState<Version[]>([]);
   const [status, setStatus] = useState<string>('stopped');
   const [logs, setLogs] = useState<string[]>([]);
@@ -21,6 +26,20 @@ export const ServerManager: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [command, setCommand] = useState('');
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  const authFetch = async (url: string, options: RequestInit = {}) => {
+    const headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    const res = await fetch(url, { ...options, headers });
+    if (res.status === 401) {
+      onLogout();
+      throw new Error('Unauthorized');
+    }
+    return res;
+  };
 
   useEffect(() => {
     fetchVersions();
@@ -45,7 +64,7 @@ export const ServerManager: React.FC = () => {
 
   const fetchVersions = async () => {
     try {
-      const res = await fetch(`${API_URL}/versions`);
+      const res = await authFetch(`${API_URL}/versions`);
       const data = await res.json();
       setVersions(data);
       if (data.length > 0 && !selectedVersion) setSelectedVersion(data[0].version);
@@ -57,9 +76,8 @@ export const ServerManager: React.FC = () => {
   const installVersion = async (version: string) => {
     setLoading(true);
     try {
-      await fetch(`${API_URL}/install`, {
+      await authFetch(`${API_URL}/install`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ version })
       });
       await fetchVersions();
@@ -73,9 +91,8 @@ export const ServerManager: React.FC = () => {
 
   const startServer = async () => {
     try {
-      await fetch(`${API_URL}/start`, {
+      await authFetch(`${API_URL}/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ version: selectedVersion })
       });
     } catch (err) {
@@ -85,7 +102,7 @@ export const ServerManager: React.FC = () => {
 
   const stopServer = async () => {
     try {
-      await fetch(`${API_URL}/stop`, { method: 'POST' });
+      await authFetch(`${API_URL}/stop`, { method: 'POST' });
     } catch (err) {
       console.error(err);
     }
@@ -96,9 +113,8 @@ export const ServerManager: React.FC = () => {
     if (!command) return;
     
     try {
-      await fetch(`${API_URL}/command`, {
+      await authFetch(`${API_URL}/command`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command })
       });
       setCommand('');
@@ -109,7 +125,10 @@ export const ServerManager: React.FC = () => {
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Vintage Story Server Manager</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Vintage Story Server Manager</h1>
+        <button onClick={onLogout} className="text-sm text-red-600 hover:underline">Logout</button>
+      </div>
       
       <div className="mb-6 bg-white p-4 rounded shadow text-gray-800">
         <h2 className="text-xl font-semibold mb-2">Server Control</h2>

@@ -1,8 +1,19 @@
 import { Router } from 'express';
 import { ServerController } from '../controllers/ServerController';
+import { AuthController } from '../controllers/AuthController';
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 const serverController = new ServerController();
+const authController = new AuthController();
+
+// Public routes
+router.post('/login', (req, res) => authController.login(req, res));
+
+// Protected routes
+router.use(authMiddleware);
+
+router.post('/change-password', (req, res) => authController.changePassword(req, res));
 
 router.get('/status', (req, res) => {
   res.json({ status: 'online', message: 'Server Manager is running' });

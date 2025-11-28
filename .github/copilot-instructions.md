@@ -28,6 +28,8 @@ Should run the server, provice a web interface to manage it, and allow configura
 - Indentation: 2 spaces
 - Naming: camelCase for variables/functions, PascalCase for classes/components
 - Error Handling: Use try/catch blocks with typed error handling. Always log errors to console/file.
+- Make sure that any routes that should be protected are protected with JWT authentication.
+- Use environment variables for configuration (e.g., server port, database connection strings).
 
 ## Specific Instructions for Copilot
 <!-- Add any specific behaviors you want Copilot to follow. -->
