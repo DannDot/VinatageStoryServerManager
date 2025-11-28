@@ -8,6 +8,7 @@ import { InstancesPage } from './pages/InstancesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ConfigPage } from './pages/ConfigPage';
 import ModsPage from './pages/ModsPage';
+import BackupsPage from './pages/BackupsPage';
 import { SocketProvider } from './context/SocketContext';
 import { ServerProvider } from './context/ServerContext';
 
@@ -65,6 +66,7 @@ function App() {
               <Route path="/instances" element={<InstancesPage token={token} onLogout={handleLogout} />} />
               <Route path="/config" element={<ConfigPage token={token} onLogout={handleLogout} />} />
               <Route path="/mods" element={<ModsPage token={token} onLogout={handleLogout} />} />
+              <Route path="/backups" element={<BackupsPage token={token} onLogout={handleLogout} />} />
               <Route path="/settings" element={<SettingsPage token={token} onLogout={handleLogout} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

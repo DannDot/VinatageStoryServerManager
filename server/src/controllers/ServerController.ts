@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { VersionService } from '../services/VersionService';
-import { ProcessService } from '../services/ProcessService';
+import { processService } from '../services/ProcessService';
 import { DotnetService } from '../services/DotnetService';
 import { instanceService } from '../services/ServerInstanceService';
 import path from 'path';
@@ -8,7 +8,6 @@ import fs from 'fs';
 
 const versionService = new VersionService();
 const dotnetService = new DotnetService();
-export const processService = new ProcessService();
 
 export class ServerController {
   

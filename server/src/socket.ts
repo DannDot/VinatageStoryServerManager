@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import http from 'http';
-import { processService } from './controllers/ServerController';
+import { processService } from './services/ProcessService';
 
 let io: Server;
 
@@ -12,11 +12,11 @@ export const initSocket = (server: http.Server) => {
     }
   });
 
-  processService.on('log', (log) => {
+  processService.on('log', (log: string) => {
     io.emit('console-log', log);
   });
 
-  processService.on('status', (status) => {
+  processService.on('status', (status: string) => {
     io.emit('server-status', status);
   });
 

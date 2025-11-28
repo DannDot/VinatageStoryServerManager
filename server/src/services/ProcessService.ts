@@ -111,3 +111,5 @@ export class ProcessService extends EventEmitter {
       };
   }
 }
+
+export const processService = new ProcessService();

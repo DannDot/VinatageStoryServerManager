@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Server, Settings, LogOut, Terminal, HardDrive, FileJson, Package } from 'lucide-react';
+import { Menu, X, Server, Settings, LogOut, Terminal, HardDrive, FileJson, Package, Archive } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
     { name: 'Instances', href: '/instances', icon: HardDrive },
     { name: 'Config', href: '/config', icon: FileJson },
     { name: 'Mods', href: '/mods', icon: Package },
+    { name: 'Backups', href: '/backups', icon: Archive },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

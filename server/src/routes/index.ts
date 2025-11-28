@@ -3,6 +3,7 @@ import multer from 'multer';
 import { ServerController } from '../controllers/ServerController';
 import { AuthController } from '../controllers/AuthController';
 import { modController } from '../controllers/ModController';
+import { backupController } from '../controllers/BackupController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -43,5 +44,11 @@ router.get('/instances/:id/mods', (req, res) => modController.getInstalledMods(r
 router.post('/instances/:id/mods/install', (req, res) => modController.installMod(req, res));
 router.post('/instances/:id/mods/upload', upload.single('file'), (req, res) => modController.uploadMod(req, res));
 router.delete('/instances/:id/mods/:filename', (req, res) => modController.deleteMod(req, res));
+
+// Backup routes
+router.get('/instances/:id/backups', (req, res) => backupController.getBackups(req, res));
+router.post('/instances/:id/backups', (req, res) => backupController.createBackup(req, res));
+router.post('/instances/:id/backups/restore', (req, res) => backupController.restoreBackup(req, res));
+router.delete('/instances/:id/backups/:filename', (req, res) => backupController.deleteBackup(req, res));
 
 export default router;
