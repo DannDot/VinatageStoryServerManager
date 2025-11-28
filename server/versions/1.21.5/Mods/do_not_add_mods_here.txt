@@ -1,3 +1,0 @@
-This place is reserved for the base game mods only (VSSurvivalMod VSCreativeMod and VSEssentials).
-
-Do not use it for other mods, instead put other mods in the VintageStoryData/Mods folder.
