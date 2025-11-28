@@ -21,7 +21,9 @@ echo "Project directory: $PROJECT_DIR"
 
 # 1. Install System Dependencies
 echo "Installing system dependencies..."
-apt-get update
+# We allow update to fail because sometimes third-party repos (like monarx) are broken, 
+# but standard repos might still work for installing our dependencies.
+apt-get update || echo "Warning: apt-get update failed, attempting to install dependencies anyway..."
 apt-get install -y curl wget git nginx certbot python3-certbot-nginx unzip libicu-dev acl build-essential
 
 # 2. Install Node.js (if not installed)
