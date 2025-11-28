@@ -32,6 +32,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ token, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'roles'>('general');
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [isNewRole, setIsNewRole] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
     const headers = {
@@ -177,28 +178,76 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ token, onLogout }) => {
       { key: 'VerifyPlayerAuth', label: 'Verify Player Auth', type: 'checkbox' },
     ];
 
+    const advancedFields = Object.keys(parsedConfig)
+      .filter(key => 
+        key !== 'Roles' && 
+        !generalFields.find(f => f.key === key) &&
+        typeof parsedConfig[key] !== 'object'
+      )
+      .map(key => ({
+        key,
+        label: key.replace(/([A-Z])/g, ' $1').trim(),
+        type: typeof parsedConfig[key] === 'boolean' ? 'checkbox' : typeof parsedConfig[key] === 'number' ? 'number' : 'text'
+      }));
+
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded shadow">
-        {generalFields.map((field) => (
-          <div key={field.key} className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-            {field.type === 'checkbox' ? (
-              <input
-                type="checkbox"
-                checked={parsedConfig[field.key] || false}
-                onChange={(e) => handleGeneralChange(field.key, e.target.checked)}
-                className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-              />
-            ) : (
-              <input
-                type={field.type}
-                value={parsedConfig[field.key] || ''}
-                onChange={(e) => handleGeneralChange(field.key, field.type === 'number' ? parseInt(e.target.value) : e.target.value)}
-                className="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            )}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded shadow">
+          {generalFields.map((field) => (
+            <div key={field.key} className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+              {field.type === 'checkbox' ? (
+                <input
+                  type="checkbox"
+                  checked={parsedConfig[field.key] || false}
+                  onChange={(e) => handleGeneralChange(field.key, e.target.checked)}
+                  className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+              ) : (
+                <input
+                  type={field.type}
+                  value={parsedConfig[field.key] || ''}
+                  onChange={(e) => handleGeneralChange(field.key, field.type === 'number' ? parseInt(e.target.value) : e.target.value)}
+                  className="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white p-6 rounded shadow">
+          <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setShowAdvanced(!showAdvanced)}>
+            <h3 className="text-lg font-bold text-gray-800">Advanced Settings</h3>
+            <button className="text-blue-600 text-sm hover:underline">
+              {showAdvanced ? 'Hide' : 'Show'}
+            </button>
           </div>
-        ))}
+          
+          {showAdvanced && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {advancedFields.map((field) => (
+                <div key={field.key} className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                  {field.type === 'checkbox' ? (
+                    <input
+                      type="checkbox"
+                      checked={parsedConfig[field.key] || false}
+                      onChange={(e) => handleGeneralChange(field.key, e.target.checked)}
+                      className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                  ) : (
+                    <input
+                      type={field.type}
+                      value={parsedConfig[field.key] === null ? '' : parsedConfig[field.key]}
+                      onChange={(e) => handleGeneralChange(field.key, field.type === 'number' ? parseFloat(e.target.value) : e.target.value)}
+                      className="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -325,7 +374,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ token, onLogout }) => {
             <div key={role.Code} className="bg-white p-4 rounded shadow flex justify-between items-center">
               <div>
                 <div className="flex items-center space-x-2">
-                  <h3 className="font-bold text-lg" style={{ color: role.Color.toLowerCase() }}>{role.Name}</h3>
+                  <h3 className="font-bold text-lg" style={{ color: role.Color.toLowerCase() === 'white' ? 'black' : role.Color.toLowerCase() }}>{role.Name}</h3>
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 font-mono">{role.Code}</span>
                 </div>
                 <p className="text-sm text-gray-600">{role.Description}</p>
