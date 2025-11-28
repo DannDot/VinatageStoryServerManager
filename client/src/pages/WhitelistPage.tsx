@@ -226,10 +226,10 @@ const WhitelistPage: React.FC<WhitelistPageProps> = ({ token }) => {
               <div key={index} className="p-4 flex items-center justify-between hover:bg-gray-700/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-lg font-bold text-gray-400">
-                    {player.name.charAt(0).toUpperCase()}
+                    {(player.name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className="font-medium text-white">{player.name}</div>
+                    <div className="font-medium text-white">{player.name || 'Unknown Player'}</div>
                     {player.lastKnownName && player.lastKnownName !== player.name && (
                       <div className="text-sm text-gray-500">Last known as: {player.lastKnownName}</div>
                     )}
@@ -239,8 +239,9 @@ const WhitelistPage: React.FC<WhitelistPageProps> = ({ token }) => {
                   </div>
                 </div>
                 <button
-                  onClick={() => removePlayer(player.name)}
-                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                  onClick={() => player.name && removePlayer(player.name)}
+                  disabled={!player.name}
+                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Remove from whitelist"
                 >
                   <Trash2 className="w-5 h-5" />
