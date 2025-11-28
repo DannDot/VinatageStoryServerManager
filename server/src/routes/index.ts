@@ -21,6 +21,11 @@ router.get('/status', (req, res) => {
 
 router.get('/versions', (req, res) => serverController.getVersions(req, res));
 router.post('/install', (req, res) => serverController.installVersion(req, res));
+
+router.get('/instances', (req, res) => serverController.getInstances(req, res));
+router.post('/instances', (req, res) => serverController.createInstance(req, res));
+router.delete('/instances/:id', (req, res) => serverController.deleteInstance(req, res));
+
 router.post('/start', (req, res) => serverController.startServer(req, res));
 router.post('/stop', (req, res) => serverController.stopServer(req, res));
 router.get('/server-status', (req, res) => serverController.getStatus(req, res));

@@ -16,12 +16,14 @@ Should run the server, provice a web interface to manage it, and allow configura
 - build for ubuntu/debian based linux distributions
 - realtime updates on server status via web interface
 - realtime server console output via web interface
+- multi-server instance management (create, delete, switch between servers)
+- mobile-friendly responsive UI
 
 ## Tech Stack
 <!-- List the languages, frameworks, and tools used in this project. -->
 - Language: TypeScript (Node.js)
 - Framework: Express.js (Backend), React (Frontend)
-- Tools: Socket.io (Real-time console), TailwindCSS (Styling), Vite (Build tool)
+- Tools: Socket.io (Real-time console), TailwindCSS (Styling), Vite (Build tool), SQLite (Database), React Router (Navigation)
 
 ## Coding Style & Conventions
 <!-- Define your preferred coding style, naming conventions, and patterns. -->
@@ -30,6 +32,7 @@ Should run the server, provice a web interface to manage it, and allow configura
 - Error Handling: Use try/catch blocks with typed error handling. Always log errors to console/file.
 - Make sure that any routes that should be protected are protected with JWT authentication.
 - Use environment variables for configuration (e.g., server port, database connection strings).
+- UI should be responsive and mobile-first where possible.
 
 ## Specific Instructions for Copilot
 <!-- Add any specific behaviors you want Copilot to follow. -->
@@ -40,3 +43,5 @@ Should run the server, provice a web interface to manage it, and allow configura
 - Follow best practices for security and performance.
 - Use async/await for asynchronous operations.
 - Ensure strict type checking in TypeScript.
+- When implementing server switching, ensure the previous server is gracefully stopped.
+- Allow server creation with any version, auto-installing it if necessary upon start.

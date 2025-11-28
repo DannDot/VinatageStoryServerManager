@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { VersionService } from '../services/VersionService';
 import { ProcessService } from '../services/ProcessService';
 import { DotnetService } from '../services/DotnetService';
+import { instanceService } from '../services/ServerInstanceService';
 import path from 'path';
 import fs from 'fs';
 
@@ -41,20 +42,68 @@ export class ServerController {
     }
   }
 
-  async startServer(req: Request, res: Response) {
-    const { version } = req.body;
-    if (!version) return res.status(400).json({ error: 'Version is required' });
+  async getInstances(req: Request, res: Response) {
+    try {
+      const instances = await instanceService.getInstances();
+      res.json(instances);
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async createInstance(req: Request, res: Response) {
+    const { name, version } = req.body;
+    if (!name || !version) return res.status(400).json({ error: 'Name and version are required' });
 
     try {
+      const instance = await instanceService.createInstance(name, version);
+      res.json(instance);
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async deleteInstance(req: Request, res: Response) {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'ID is required' });
+
+    try {
+      await instanceService.deleteInstance(parseInt(id));
+      res.json({ message: 'Instance deleted' });
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async startServer(req: Request, res: Response) {
+    const { instanceId } = req.body;
+    if (!instanceId) return res.status(400).json({ error: 'Instance ID is required' });
+
+    try {
+      const instance = await instanceService.getInstance(instanceId);
+      if (!instance) return res.status(404).json({ error: 'Instance not found' });
+
+      // Check if version is installed, if not, install it
+      const installedVersions = versionService.getInstalledVersions();
+      if (!installedVersions.includes(instance.version)) {
+        console.log(`Version ${instance.version} not installed. Auto-installing...`);
+        await versionService.downloadAndInstall(instance.version);
+      }
+
       // Ensure .NET is installed
       await dotnetService.installDotnet();
 
-      const dataPath = path.join(process.cwd(), 'server-data');
-      if (!fs.existsSync(dataPath)) {
-          fs.mkdirSync(dataPath);
+      // Stop any running server gracefully
+      const status = processService.getStatus();
+      if (status.status === 'running') {
+        console.log('Stopping currently running server...');
+        await processService.stopServer();
       }
       
-      await processService.startServer(version, dataPath);
+      await processService.startServer(instance.version, instance.path, instanceId);
       res.json({ message: 'Server started' });
     } catch (error: any) {
       console.error(error);
@@ -62,9 +111,9 @@ export class ServerController {
     }
   }
 
-  stopServer(req: Request, res: Response) {
+  async stopServer(req: Request, res: Response) {
     try {
-      processService.stopServer();
+      await processService.stopServer();
       res.json({ message: 'Server stop command sent' });
     } catch (error: any) {
       console.error(error);
@@ -73,7 +122,7 @@ export class ServerController {
   }
   
   getStatus(req: Request, res: Response) {
-      res.json({ status: processService.getStatus() });
+      res.json(processService.getStatus());
   }
   
   sendCommand(req: Request, res: Response) {

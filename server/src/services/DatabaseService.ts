@@ -42,6 +42,16 @@ export class DatabaseService {
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Create server_instances table
+    await this.db.exec(`
+      CREATE TABLE IF NOT EXISTS server_instances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        version TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
   }
 
   async getSetting(key: string): Promise<string | null> {
@@ -74,6 +84,32 @@ export class DatabaseService {
       'SELECT * FROM server_events ORDER BY timestamp DESC LIMIT ?',
       limit
     );
+  }
+
+  // Instance methods
+  async createInstance(name: string, version: string): Promise<number> {
+    if (!this.db) throw new Error('Database not initialized');
+    const result = await this.db.run(
+      'INSERT INTO server_instances (name, version) VALUES (?, ?)',
+      name,
+      version
+    );
+    return result.lastID!;
+  }
+
+  async getInstances(): Promise<any[]> {
+    if (!this.db) throw new Error('Database not initialized');
+    return await this.db.all('SELECT * FROM server_instances ORDER BY created_at DESC');
+  }
+
+  async getInstance(id: number): Promise<any> {
+    if (!this.db) throw new Error('Database not initialized');
+    return await this.db.get('SELECT * FROM server_instances WHERE id = ?', id);
+  }
+
+  async deleteInstance(id: number): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    await this.db.run('DELETE FROM server_instances WHERE id = ?', id);
   }
 }
 

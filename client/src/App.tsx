@@ -1,36 +1,39 @@
 import { useState, useEffect } from 'react';
-import { ServerManager } from './components/ServerManager';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './components/Login';
 import { ChangePassword } from './components/ChangePassword';
+import Layout from './components/Layout';
+import { ConsolePage } from './pages/ConsolePage';
+import { InstancesPage } from './pages/InstancesPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { SocketProvider } from './context/SocketContext';
+import { ServerProvider } from './context/ServerContext';
 
 function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) setToken(storedToken);
-  }, []);
+    if (token) {
+      // Verify token validity if needed, or just rely on 401s
+    }
+  }, [token]);
 
   const handleLogin = (newToken: string, changeRequired: boolean) => {
-    localStorage.setItem('token', newToken);
     setToken(newToken);
+    localStorage.setItem('token', newToken);
     setMustChangePassword(changeRequired);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     setToken(null);
-    setMustChangePassword(false);
-  };
-
-  const handlePasswordChanged = () => {
+    localStorage.removeItem('token');
     setMustChangePassword(false);
   };
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gray-100 py-8">
+      <div className="min-h-screen bg-gray-100 p-4">
         <Login onLogin={handleLogin} />
       </div>
     );
@@ -38,16 +41,33 @@ function App() {
 
   if (mustChangePassword) {
     return (
-      <div className="min-h-screen bg-gray-100 py-8">
-        <ChangePassword token={token} onSuccess={handlePasswordChanged} />
+      <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <ChangePassword 
+            token={token} 
+            onLogout={handleLogout} 
+            onSuccess={() => setMustChangePassword(false)} 
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <ServerManager token={token} onLogout={handleLogout} />
-    </div>
+    <SocketProvider>
+      <ServerProvider>
+        <Router>
+          <Layout onLogout={handleLogout}>
+            <Routes>
+              <Route path="/" element={<ConsolePage token={token} onLogout={handleLogout} />} />
+              <Route path="/instances" element={<InstancesPage token={token} onLogout={handleLogout} />} />
+              <Route path="/settings" element={<SettingsPage token={token} onLogout={handleLogout} />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </ServerProvider>
+    </SocketProvider>
   );
 }
 

@@ -9,9 +9,10 @@ const dotnetService = new DotnetService();
 
 export class ProcessService extends EventEmitter {
   private process: ChildProcess | null = null;
+  private activeInstanceId: number | null = null;
   private versionsDir = path.join(process.cwd(), 'versions');
 
-  async startServer(version: string, dataPath: string) {
+  async startServer(version: string, dataPath: string, instanceId: number) {
     if (this.process) {
       throw new Error('Server is already running');
     }
@@ -30,7 +31,7 @@ export class ProcessService extends EventEmitter {
     fs.chmodSync(executablePath, '755');
 
     console.log(`Starting server from ${serverDir} with data path ${dataPath}`);
-    await dbService.logEvent('SERVER_START', `Starting server version ${version}`);
+    await dbService.logEvent('SERVER_START', `Starting server instance ${instanceId} (v${version})`);
 
     const dotnetPath = dotnetService.getDotnetPath();
     const env = {
@@ -44,6 +45,8 @@ export class ProcessService extends EventEmitter {
       stdio: ['pipe', 'pipe', 'pipe'],
       env
     });
+    
+    this.activeInstanceId = instanceId;
 
     this.process.stdout?.on('data', (data) => {
       const log = data.toString();
@@ -61,16 +64,38 @@ export class ProcessService extends EventEmitter {
       console.log(`Server process exited with code ${code}`);
       dbService.logEvent('SERVER_STOP', `Server process exited with code ${code}`);
       this.process = null;
-      this.emit('status', 'stopped');
+      this.activeInstanceId = null;
+      this.emit('status', { status: 'stopped', activeInstanceId: null });
     });
     
-    this.emit('status', 'running');
+    this.emit('status', { status: 'running', activeInstanceId: this.activeInstanceId });
   }
 
-  stopServer() {
-    if (this.process) {
-      this.process.kill();
-    }
+  async stopServer(): Promise<void> {
+    if (!this.process) return;
+
+    return new Promise((resolve) => {
+      if (!this.process) {
+        resolve();
+        return;
+      }
+
+      const onExit = () => {
+        resolve();
+      };
+
+      this.process.once('close', onExit);
+      this.process.kill('SIGTERM'); // Try graceful stop first
+
+      // Force kill if it doesn't stop in 10 seconds
+      setTimeout(() => {
+        if (this.process) {
+          console.log('Force killing server process...');
+          this.process.kill('SIGKILL');
+          resolve();
+        }
+      }, 10000);
+    });
   }
 
   sendCommand(command: string) {
@@ -80,6 +105,9 @@ export class ProcessService extends EventEmitter {
   }
   
   getStatus() {
-      return this.process ? 'running' : 'stopped';
+      return {
+        status: this.process ? 'running' : 'stopped',
+        activeInstanceId: this.activeInstanceId
+      };
   }
 }
