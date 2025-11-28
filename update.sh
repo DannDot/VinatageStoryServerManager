@@ -30,7 +30,9 @@ run_as_user() {
 }
 
 # 1. Pull latest changes
-echo "Pulling latest changes from git..."
+echo "Discarding local changes and pulling latest from git..."
+# Discard local changes to ensure clean pull
+run_as_user git restore .
 # We need to run git pull as the user to avoid messing up file permissions
 run_as_user git pull
 

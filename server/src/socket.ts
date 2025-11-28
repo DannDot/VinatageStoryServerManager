@@ -26,6 +26,8 @@ export const initSocket = (server: http.Server) => {
 
   io.on('connection', (socket) => {
     console.log('A user connected');
+    socket.emit('server-status', processService.getStatus());
+
     
     socket.emit('server-status', processService.getStatus());
 

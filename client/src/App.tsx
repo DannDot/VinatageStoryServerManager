@@ -68,7 +68,7 @@ function App() {
               <Route path="/config" element={<ConfigPage token={token} onLogout={handleLogout} />} />
               <Route path="/mods" element={<ModsPage token={token} onLogout={handleLogout} />} />
               <Route path="/backups" element={<BackupsPage token={token} onLogout={handleLogout} />} />
-              <Route path="/stats" element={<StatsPage />} />
+              <Route path="/stats" element={<StatsPage token={token} onLogout={handleLogout} />} />
               <Route path="/settings" element={<SettingsPage token={token} onLogout={handleLogout} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

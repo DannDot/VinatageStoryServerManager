@@ -51,6 +51,7 @@ export class ProcessService extends EventEmitter {
     });
     
     this.activeInstanceId = instanceId;
+    console.log('Starting stats monitoring...');
     this.startStatsMonitoring();
 
     this.process.stdout?.on('data', (data) => {
@@ -102,6 +103,7 @@ export class ProcessService extends EventEmitter {
           timestamp: Date.now()
         });
       } catch (err) {
+        console.error('Error in stats monitoring:', err);
         // Process might have exited
       }
     }, 2000); // Every 2 seconds

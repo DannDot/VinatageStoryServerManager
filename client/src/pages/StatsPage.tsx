@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSocket } from '../context/SocketContext';
-import { Activity, Cpu, HardDrive, Server as ServerIcon } from 'lucide-react';
+import { Activity, Cpu, HardDrive, Server as ServerIcon, AlertCircle } from 'lucide-react';
 
 interface ServerStats {
   cpu: number;
@@ -9,16 +9,42 @@ interface ServerStats {
   timestamp: number;
 }
 
-const StatsPage: React.FC = () => {
+interface StatsPageProps {
+  token: string | null;
+  onLogout?: () => void;
+}
+
+const StatsPage: React.FC<StatsPageProps> = ({ token }) => {
   const { socket } = useSocket();
   const [stats, setStats] = useState<ServerStats | null>(null);
   const [history, setHistory] = useState<ServerStats[]>([]);
+  const [serverStatus, setServerStatus] = useState<string>('unknown');
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      if (!token) return;
+      try {
+        const response = await fetch('/api/server-status', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setServerStatus(data.status);
+        }
+      } catch (error) {
+        console.error('Error fetching server status:', error);
+      }
+    };
+
+    fetchStatus();
+  }, [token]);
 
   useEffect(() => {
     if (!socket) return;
 
     const handleStats = (newStats: ServerStats) => {
       setStats(newStats);
+      setServerStatus('running');
       setHistory(prev => {
         const newHistory = [...prev, newStats];
         if (newHistory.length > 60) newHistory.shift(); // Keep last 60 updates (approx 2 mins)
@@ -26,10 +52,19 @@ const StatsPage: React.FC = () => {
       });
     };
 
+    const handleStatus = (status: any) => {
+      setServerStatus(status.status);
+      if (status.status !== 'running') {
+        setStats(null);
+      }
+    };
+
     socket.on('server-stats', handleStats);
+    socket.on('server-status', handleStatus);
 
     return () => {
       socket.off('server-stats', handleStats);
+      socket.off('server-status', handleStatus);
     };
   }, [socket]);
 
@@ -44,9 +79,18 @@ const StatsPage: React.FC = () => {
   if (!stats) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-500">
-        <Activity className="w-16 h-16 mb-4 animate-pulse" />
-        <p className="text-xl">Waiting for server stats...</p>
-        <p className="text-sm mt-2">Make sure the server is running.</p>
+        {serverStatus === 'running' ? (
+            <>
+                <Activity className="w-16 h-16 mb-4 animate-pulse" />
+                <p className="text-xl">Waiting for server stats...</p>
+            </>
+        ) : (
+            <>
+                <AlertCircle className="w-16 h-16 mb-4" />
+                <p className="text-xl">Server is not running</p>
+                <p className="text-sm mt-2">Start the server to view statistics.</p>
+            </>
+        )}
       </div>
     );
   }
