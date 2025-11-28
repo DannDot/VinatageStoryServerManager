@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import http from 'http';
+import { processService } from './controllers/ServerController';
 
 let io: Server;
 
@@ -11,8 +12,18 @@ export const initSocket = (server: http.Server) => {
     }
   });
 
+  processService.on('log', (log) => {
+    io.emit('console-log', log);
+  });
+
+  processService.on('status', (status) => {
+    io.emit('server-status', status);
+  });
+
   io.on('connection', (socket) => {
     console.log('A user connected');
+    
+    socket.emit('server-status', processService.getStatus());
 
     socket.on('disconnect', () => {
       console.log('User disconnected');

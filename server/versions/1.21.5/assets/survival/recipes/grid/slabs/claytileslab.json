@@ -1,0 +1,12 @@
+[
+	{
+		ingredientPattern: "BCB,BBB",
+		ingredients: {
+			"C": { type: "item", code: "mortar" },
+			"B": { type: "item", code: "claytile-fired-{pattern}-{color}", quantity:1 }
+		},
+		width: 3,
+		height: 2,
+		output: { type: "block", code: "tileslab-2x2-{pattern}-{color}-down-free", quantity: 4  }
+	}
+]
