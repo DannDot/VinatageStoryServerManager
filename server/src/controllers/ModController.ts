@@ -4,10 +4,25 @@ import { modService } from '../services/ModService';
 export class ModController {
   async getModList(req: Request, res: Response) {
     try {
-      const mods = await modService.getModList();
-      res.json(mods);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const sort = req.query.sort as any;
+      const order = req.query.order as any;
+      const search = req.query.search as string;
+
+      const result = await modService.getModList({ page, limit, sort, order, search });
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch mod list' });
+    }
+  }
+
+  async refreshCache(req: Request, res: Response) {
+    try {
+      await modService.forceRefreshCache();
+      res.json({ success: true, message: 'Cache refreshed successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to refresh cache' });
     }
   }
 

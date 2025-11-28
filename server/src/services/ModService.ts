@@ -8,6 +8,7 @@ const MOD_DB_API = 'https://mods.vintagestory.at/api';
 
 export interface ModInfo {
   modid: number;
+  assetid: number;
   name: string;
   summary: string;
   author: string;
@@ -15,6 +16,9 @@ export interface ModInfo {
   lastreleased: string;
   tags: string[];
   side: string;
+  downloads: number;
+  trendingpoints: number;
+  comments: number;
 }
 
 export interface InstalledMod {
@@ -27,21 +31,144 @@ export interface InstalledMod {
   isEnabled: boolean;
 }
 
+export interface ModListOptions {
+  page?: number;
+  limit?: number;
+  sort?: 'newest' | 'downloads' | 'trending' | 'name';
+  order?: 'asc' | 'desc';
+  search?: string;
+}
+
 export class ModService {
+  private modListCache: ModInfo[] | null = null;
+  private lastCacheUpdate: number = 0;
+  private readonly CACHE_TTL = 1000 * 60 * 60; // 1 hour
+  private readonly CACHE_FILE = path.join(process.cwd(), 'server-data', 'Cache', 'modlist.json');
+
+  constructor() {
+    this.loadCacheFromDisk();
+  }
+
   private getModsPath(instanceId: number): string {
     return path.join(process.cwd(), 'server-data', 'instances', instanceId.toString(), 'Mods');
   }
 
-  async getModList(): Promise<ModInfo[]> {
+  private loadCacheFromDisk() {
     try {
-      const response = await axios.get(`${MOD_DB_API}/mods`);
-      if (response.data && response.data.mods) {
-        return response.data.mods;
+      if (fs.existsSync(this.CACHE_FILE)) {
+        const data = fs.readFileSync(this.CACHE_FILE, 'utf-8');
+        const cache = JSON.parse(data);
+        if (cache.mods && Array.isArray(cache.mods)) {
+          this.modListCache = cache.mods;
+          this.lastCacheUpdate = cache.timestamp || 0;
+          console.log(`Loaded ${cache.mods.length} mods from disk cache.`);
+        }
       }
-      return [];
+    } catch (error) {
+      console.error('Failed to load mod cache from disk:', error);
+    }
+  }
+
+  private saveCacheToDisk() {
+    try {
+      const cacheDir = path.dirname(this.CACHE_FILE);
+      if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
+      fs.writeFileSync(this.CACHE_FILE, JSON.stringify({
+        timestamp: this.lastCacheUpdate,
+        mods: this.modListCache
+      }));
+    } catch (error) {
+      console.error('Failed to save mod cache to disk:', error);
+    }
+  }
+
+  async forceRefreshCache(): Promise<void> {
+    await this.refreshCache();
+  }
+
+  async getModList(options: ModListOptions = {}): Promise<{ mods: ModInfo[], total: number }> {
+    try {
+      // Update cache if needed and not present
+      if (!this.modListCache || (this.modListCache.length === 0)) {
+        await this.refreshCache();
+      }
+      // Note: We don't auto-refresh on TTL anymore to give user control, 
+      // or we could keep it but rely on the disk cache primarily.
+      // Let's keep the TTL check but only if we haven't loaded from disk recently?
+      // Actually, user asked for a button. Let's respect the TTL but allow the button to override.
+      else if (Date.now() - this.lastCacheUpdate > this.CACHE_TTL) {
+         // Background refresh if expired, but return current cache immediately?
+         // Or just wait. Let's wait to ensure freshness.
+         await this.refreshCache();
+      }
+
+      let mods = [...(this.modListCache || [])];
+
+      // Search
+      if (options.search) {
+        const searchLower = options.search.toLowerCase();
+        mods = mods.filter(mod => 
+          (mod.name || '').toLowerCase().includes(searchLower) ||
+          (mod.summary || '').toLowerCase().includes(searchLower) ||
+          (mod.author || '').toLowerCase().includes(searchLower) ||
+          (mod.tags || []).some(tag => tag.toLowerCase().includes(searchLower))
+        );
+      }
+
+      // Sort
+      const sort = options.sort || 'newest';
+      const order = options.order || 'desc';
+      
+      mods.sort((a, b) => {
+        let comparison = 0;
+        switch (sort) {
+          case 'downloads':
+            comparison = (Number(a.downloads) || 0) - (Number(b.downloads) || 0);
+            break;
+          case 'trending':
+            comparison = (Number(a.trendingpoints) || 0) - (Number(b.trendingpoints) || 0);
+            break;
+          case 'name':
+            comparison = (a.name || '').localeCompare(b.name || '');
+            break;
+          case 'newest':
+          default:
+            comparison = new Date(a.lastreleased).getTime() - new Date(b.lastreleased).getTime();
+            break;
+        }
+        return order === 'desc' ? -comparison : comparison;
+      });
+
+      // Pagination
+      const page = options.page || 1;
+      const limit = options.limit || 20;
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const total = mods.length;
+
+      return {
+        mods: mods.slice(startIndex, endIndex),
+        total
+      };
     } catch (error) {
       console.error('Error fetching mod list:', error);
-      return [];
+      return { mods: [], total: 0 };
+    }
+  }
+
+  private async refreshCache() {
+    try {
+      console.log('Refreshing mod list cache from API...');
+      const response = await axios.get(`${MOD_DB_API}/mods`);
+      if (response.data && response.data.mods) {
+        this.modListCache = response.data.mods;
+        this.lastCacheUpdate = Date.now();
+        this.saveCacheToDisk();
+      }
+    } catch (error) {
+      console.error('Failed to refresh mod cache:', error);
     }
   }
 

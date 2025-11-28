@@ -38,6 +38,7 @@ router.post('/command', (req, res) => serverController.sendCommand(req, res));
 
 // Mod routes
 router.get('/mods/list', (req, res) => modController.getModList(req, res));
+router.post('/mods/refresh', (req, res) => modController.refreshCache(req, res));
 router.get('/instances/:id/mods', (req, res) => modController.getInstalledMods(req, res));
 router.post('/instances/:id/mods/install', (req, res) => modController.installMod(req, res));
 router.post('/instances/:id/mods/upload', upload.single('file'), (req, res) => modController.uploadMod(req, res));
