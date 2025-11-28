@@ -1,6 +1,7 @@
 import { spawn, ChildProcess, exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { EventEmitter } from 'events';
 import pidusage from 'pidusage';
 import util from 'util';
@@ -99,6 +100,7 @@ export class ProcessService extends EventEmitter {
         this.emit('stats', {
           cpu: stats.cpu,
           memory: stats.memory,
+          totalMemory: os.totalmem(),
           disk: diskUsage,
           timestamp: Date.now()
         });

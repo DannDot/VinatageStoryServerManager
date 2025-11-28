@@ -5,6 +5,7 @@ import { Activity, Cpu, HardDrive, Server as ServerIcon, AlertCircle } from 'luc
 interface ServerStats {
   cpu: number;
   memory: number;
+  totalMemory: number;
   disk: number;
   timestamp: number;
 }
@@ -14,10 +15,56 @@ interface StatsPageProps {
   onLogout?: () => void;
 }
 
+const AreaChart = ({ data, dataKey, color, height = 200, maxValue = 100 }: { 
+  data: any[], 
+  dataKey: string, 
+  color: string, 
+  height?: number, 
+  maxValue?: number
+}) => {
+  if (data.length < 2) return <div style={{ height }} className="w-full bg-gray-50 rounded flex items-center justify-center text-gray-400">Collecting data...</div>;
+
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const val = d[dataKey];
+    // Ensure value doesn't exceed max for drawing purposes
+    const normalizedVal = Math.min(Math.max(val, 0), maxValue);
+    const y = 100 - (normalizedVal / maxValue) * 100;
+    return `${x},${y}`;
+  }).join(' ');
+
+  // Close the path for the area fill
+  const areaPath = `M 0,100 L ${points.replace(/ /g, ' L ')} L 100,100 Z`;
+  const linePath = `M ${points.replace(/ /g, ' L ')}`;
+
+  return (
+    <div className="w-full relative" style={{ height }}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+        {/* Grid lines */}
+        <line x1="0" y1="0" x2="100" y2="0" stroke="#f3f4f6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1="25" x2="100" y2="25" stroke="#f3f4f6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1="50" x2="100" y2="50" stroke="#f3f4f6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1="75" x2="100" y2="75" stroke="#f3f4f6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1="100" x2="100" y2="100" stroke="#f3f4f6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        
+        <defs>
+          <linearGradient id={`gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        
+        <path d={areaPath} fill={`url(#gradient-${color})`} stroke="none" />
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+};
+
 const StatsPage: React.FC<StatsPageProps> = ({ token }) => {
   const { socket } = useSocket();
   const [stats, setStats] = useState<ServerStats | null>(null);
-  const [history, setHistory] = useState<ServerStats[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [serverStatus, setServerStatus] = useState<string>('unknown');
 
   useEffect(() => {
@@ -46,7 +93,9 @@ const StatsPage: React.FC<StatsPageProps> = ({ token }) => {
       setStats(newStats);
       setServerStatus('running');
       setHistory(prev => {
-        const newHistory = [...prev, newStats];
+        const memoryPercentage = (newStats.memory / newStats.totalMemory) * 100;
+        const point = { ...newStats, memoryPercentage };
+        const newHistory = [...prev, point];
         if (newHistory.length > 60) newHistory.shift(); // Keep last 60 updates (approx 2 mins)
         return newHistory;
       });
@@ -95,6 +144,8 @@ const StatsPage: React.FC<StatsPageProps> = ({ token }) => {
     );
   }
 
+  const memoryPercentage = (stats.memory / stats.totalMemory) * 100;
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -127,11 +178,17 @@ const StatsPage: React.FC<StatsPageProps> = ({ token }) => {
               <ServerIcon className="w-5 h-5 text-green-500" />
               Memory Usage
             </h2>
-            <span className="text-2xl font-bold text-green-600">{formatBytes(stats.memory)}</span>
+            <div className="text-right">
+              <span className="text-2xl font-bold text-green-600">{memoryPercentage.toFixed(1)}%</span>
+              <p className="text-xs text-gray-500">{formatBytes(stats.memory)} / {formatBytes(stats.totalMemory)}</p>
+            </div>
           </div>
-          {/* No progress bar for memory as we don't know total system memory easily without more backend work, 
-              but we could assume a safe max or just show the value. 
-              Let's just show the value for now. */}
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-green-500 h-2.5 rounded-full transition-all duration-500" 
+              style={{ width: `${Math.min(memoryPercentage, 100)}%` }}
+            ></div>
+          </div>
         </div>
 
         {/* Disk Usage */}
@@ -147,18 +204,27 @@ const StatsPage: React.FC<StatsPageProps> = ({ token }) => {
         </div>
       </div>
 
-      {/* Simple History Chart (SVG) */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">CPU History (Last 2 Minutes)</h2>
-        <div className="h-64 w-full flex items-end space-x-1">
-          {history.map((point, i) => (
-            <div 
-              key={i}
-              className="bg-blue-200 hover:bg-blue-300 flex-1 rounded-t transition-all duration-300"
-              style={{ height: `${Math.min(point.cpu, 100)}%` }}
-              title={`CPU: ${point.cpu.toFixed(1)}%`}
-            ></div>
-          ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* CPU History Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-700 mb-4">CPU History (Last 2 Minutes)</h2>
+          <AreaChart 
+            data={history} 
+            dataKey="cpu" 
+            color="#2563eb" 
+            maxValue={100} 
+          />
+        </div>
+
+        {/* Memory History Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-700 mb-4">Memory History (Last 2 Minutes)</h2>
+          <AreaChart 
+            data={history} 
+            dataKey="memoryPercentage" 
+            color="#16a34a" 
+            maxValue={100} 
+          />
         </div>
       </div>
     </div>
