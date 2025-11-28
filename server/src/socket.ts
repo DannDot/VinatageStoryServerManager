@@ -20,6 +20,10 @@ export const initSocket = (server: http.Server) => {
     io.emit('server-status', status);
   });
 
+  processService.on('stats', (stats: any) => {
+    io.emit('server-stats', stats);
+  });
+
   io.on('connection', (socket) => {
     console.log('A user connected');
     

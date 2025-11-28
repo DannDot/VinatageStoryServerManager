@@ -1,16 +1,20 @@
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { EventEmitter } from 'events';
+import pidusage from 'pidusage';
+import util from 'util';
 import { DotnetService } from './DotnetService';
 import { dbService } from './DatabaseService';
 
 const dotnetService = new DotnetService();
+const execAsync = util.promisify(exec);
 
 export class ProcessService extends EventEmitter {
   private process: ChildProcess | null = null;
   private activeInstanceId: number | null = null;
   private versionsDir = path.join(process.cwd(), 'versions');
+  private statsInterval: NodeJS.Timeout | null = null;
 
   async startServer(version: string, dataPath: string, instanceId: number) {
     if (this.process) {
@@ -47,6 +51,7 @@ export class ProcessService extends EventEmitter {
     });
     
     this.activeInstanceId = instanceId;
+    this.startStatsMonitoring();
 
     this.process.stdout?.on('data', (data) => {
       const log = data.toString();
@@ -63,6 +68,7 @@ export class ProcessService extends EventEmitter {
     this.process.on('close', (code) => {
       console.log(`Server process exited with code ${code}`);
       dbService.logEvent('SERVER_STOP', `Server process exited with code ${code}`);
+      this.stopStatsMonitoring();
       this.process = null;
       this.activeInstanceId = null;
       this.emit('status', { status: 'stopped', activeInstanceId: null });
@@ -71,8 +77,47 @@ export class ProcessService extends EventEmitter {
     this.emit('status', { status: 'running', activeInstanceId: this.activeInstanceId });
   }
 
+  private startStatsMonitoring() {
+    if (this.statsInterval) clearInterval(this.statsInterval);
+
+    this.statsInterval = setInterval(async () => {
+      if (!this.process || !this.process.pid) return;
+
+      try {
+        const stats = await pidusage(this.process.pid);
+        
+        // Get disk usage of server-data
+        let diskUsage = 0;
+        try {
+            const { stdout } = await execAsync('du -sb server-data');
+            diskUsage = parseInt(stdout.split('\t')[0], 10);
+        } catch (e) {
+            // Ignore disk usage error
+        }
+
+        this.emit('stats', {
+          cpu: stats.cpu,
+          memory: stats.memory,
+          disk: diskUsage,
+          timestamp: Date.now()
+        });
+      } catch (err) {
+        // Process might have exited
+      }
+    }, 2000); // Every 2 seconds
+  }
+
+  private stopStatsMonitoring() {
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = null;
+    }
+  }
+
   async stopServer(): Promise<void> {
     if (!this.process) return;
+    
+    this.stopStatsMonitoring();
 
     return new Promise((resolve) => {
       if (!this.process) {
