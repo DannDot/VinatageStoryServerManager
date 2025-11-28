@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import { ConsolePage } from './pages/ConsolePage';
 import { InstancesPage } from './pages/InstancesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ConfigPage } from './pages/ConfigPage';
 import { SocketProvider } from './context/SocketContext';
 import { ServerProvider } from './context/ServerContext';
 
@@ -61,6 +62,7 @@ function App() {
             <Routes>
               <Route path="/" element={<ConsolePage token={token} onLogout={handleLogout} />} />
               <Route path="/instances" element={<InstancesPage token={token} onLogout={handleLogout} />} />
+              <Route path="/config" element={<ConfigPage token={token} onLogout={handleLogout} />} />
               <Route path="/settings" element={<SettingsPage token={token} onLogout={handleLogout} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

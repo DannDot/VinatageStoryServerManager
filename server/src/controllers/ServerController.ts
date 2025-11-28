@@ -120,6 +120,51 @@ export class ServerController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  async getConfig(req: Request, res: Response) {
+    const { instanceId } = req.params;
+    if (!instanceId) return res.status(400).json({ error: 'Instance ID is required' });
+
+    try {
+      const instance = await instanceService.getInstance(parseInt(instanceId));
+      if (!instance) return res.status(404).json({ error: 'Instance not found' });
+
+      const configPath = path.join(instance.path, 'serverconfig.json');
+      if (!fs.existsSync(configPath)) {
+        return res.status(404).json({ error: 'Config file not found. Start the server once to generate it.' });
+      }
+
+      const config = fs.readFileSync(configPath, 'utf-8');
+      res.json(JSON.parse(config));
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async saveConfig(req: Request, res: Response) {
+    const { instanceId } = req.params;
+    const { config } = req.body;
+    
+    if (!instanceId) return res.status(400).json({ error: 'Instance ID is required' });
+    if (!config) return res.status(400).json({ error: 'Config data is required' });
+
+    try {
+      const instance = await instanceService.getInstance(parseInt(instanceId));
+      if (!instance) return res.status(404).json({ error: 'Instance not found' });
+
+      const configPath = path.join(instance.path, 'serverconfig.json');
+      
+      // Validate JSON
+      const configStr = JSON.stringify(config, null, 2);
+      
+      fs.writeFileSync(configPath, configStr, 'utf-8');
+      res.json({ message: 'Configuration saved' });
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  }
   
   getStatus(req: Request, res: Response) {
       res.json(processService.getStatus());

@@ -28,6 +28,8 @@ router.delete('/instances/:id', (req, res) => serverController.deleteInstance(re
 
 router.post('/start', (req, res) => serverController.startServer(req, res));
 router.post('/stop', (req, res) => serverController.stopServer(req, res));
+router.get('/config/:instanceId', (req, res) => serverController.getConfig(req, res));
+router.post('/config/:instanceId', (req, res) => serverController.saveConfig(req, res));
 router.get('/server-status', (req, res) => serverController.getStatus(req, res));
 router.post('/command', (req, res) => serverController.sendCommand(req, res));
 
