@@ -54,7 +54,7 @@ export class ServerController {
           fs.mkdirSync(dataPath);
       }
       
-      processService.startServer(version, dataPath);
+      await processService.startServer(version, dataPath);
       res.json({ message: 'Server started' });
     } catch (error: any) {
       console.error(error);

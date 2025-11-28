@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { EventEmitter } from 'events';
 import { DotnetService } from './DotnetService';
+import { dbService } from './DatabaseService';
 
 const dotnetService = new DotnetService();
 
@@ -10,7 +11,7 @@ export class ProcessService extends EventEmitter {
   private process: ChildProcess | null = null;
   private versionsDir = path.join(process.cwd(), 'versions');
 
-  startServer(version: string, dataPath: string) {
+  async startServer(version: string, dataPath: string) {
     if (this.process) {
       throw new Error('Server is already running');
     }
@@ -29,6 +30,7 @@ export class ProcessService extends EventEmitter {
     fs.chmodSync(executablePath, '755');
 
     console.log(`Starting server from ${serverDir} with data path ${dataPath}`);
+    await dbService.logEvent('SERVER_START', `Starting server version ${version}`);
 
     const dotnetPath = dotnetService.getDotnetPath();
     const env = {
@@ -57,6 +59,7 @@ export class ProcessService extends EventEmitter {
 
     this.process.on('close', (code) => {
       console.log(`Server process exited with code ${code}`);
+      dbService.logEvent('SERVER_STOP', `Server process exited with code ${code}`);
       this.process = null;
       this.emit('status', 'stopped');
     });
