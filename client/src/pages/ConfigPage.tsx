@@ -384,7 +384,9 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ token, onLogout }) => {
               </div>
               <div className="flex items-center space-x-2">
                 {role.Code === 'admin' ? (
-                  <Lock className="w-5 h-5 text-gray-400" title="Admin role is locked" />
+                  <div title="Admin role is locked">
+                    <Lock className="w-5 h-5 text-gray-400" />
+                  </div>
                 ) : (
                   <>
                     <button 
