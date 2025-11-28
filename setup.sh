@@ -42,7 +42,29 @@ else
     echo "Node.js and npm are already installed."
 fi
 
-# 3. Install Project Dependencies & Build
+# 3. Prepare Environment
+echo "Preparing environment..."
+
+# Create .env if it doesn't exist
+if [ ! -f .env ]; then
+    if [ -f .env.example ]; then
+        echo "Creating .env from .env.example..."
+        cp .env.example .env
+    else
+        echo "Creating default .env..."
+        echo "PORT=3001" > .env
+        echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+        echo "DEFAULT_PASSWORD=admin123" >> .env
+    fi
+    # Set ownership of .env immediately
+    chown "$USER_NAME:$USER_NAME" .env
+fi
+
+# Fix permissions BEFORE build to ensure npm install works
+echo "Fixing permissions..."
+chown -R "$USER_NAME:$USER_NAME" "$PROJECT_DIR"
+
+# 4. Install Project Dependencies & Build
 echo "Installing project dependencies and building..."
 
 # Helper function to run command as user
@@ -70,9 +92,15 @@ run_as_user npm run build
 # Return to root
 cd "$PROJECT_DIR"
 
-# 4. Setup Systemd Service
+# 5. Setup Systemd Service
 echo "Setting up Systemd service..."
 SERVICE_FILE="/etc/systemd/system/vsmanager.service"
+
+NPM_PATH=$(which npm)
+if [ -z "$NPM_PATH" ]; then
+    echo "Error: npm not found. Cannot create service file."
+    exit 1
+fi
 
 cat > "$SERVICE_FILE" <<EOF
 [Unit]
@@ -83,7 +111,7 @@ After=network.target
 Type=simple
 User=$USER_NAME
 WorkingDirectory=$PROJECT_DIR/server
-ExecStart=$(which npm) start
+ExecStart=$NPM_PATH start
 Restart=on-failure
 Environment=PORT=3001
 # Add other env vars here if needed, or load from .env file
@@ -96,7 +124,7 @@ EOF
 systemctl daemon-reload
 systemctl enable vsmanager
 
-# 5. Nginx Setup
+# 6. Nginx Setup
 echo "Setting up Nginx..."
 
 # Load .env variables if they exist
@@ -146,13 +174,25 @@ EOF
     fi
 fi
 
-# 7. Fix Permissions (just in case)
-echo "Fixing permissions..."
-chown -R "$USER_NAME:$USER_NAME" "$PROJECT_DIR"
-
-# 8. Start Service
+# 7. Start Service
 echo "Starting VS Manager..."
 systemctl restart vsmanager
+
+# Wait for service to start
+echo "Waiting for service to start..."
+for i in {1..10}; do
+    if systemctl is-active --quiet vsmanager; then
+        echo "Service is running!"
+        break
+    fi
+    echo "."
+    sleep 1
+done
+
+if ! systemctl is-active --quiet vsmanager; then
+    echo "Error: Service failed to start. Check logs with: journalctl -u vsmanager -n 50"
+    exit 1
+fi
 
 echo "----------------------------------------------------------------"
 echo "Setup Complete!"
