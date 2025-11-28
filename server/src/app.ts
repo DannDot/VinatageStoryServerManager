@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import routes from './routes';
 
 export const app = express();
@@ -12,6 +13,11 @@ app.use(express.json());
 
 app.use('/api', routes);
 
-app.get('/', (req, res) => {
-  res.send('Vintage Story Server Manager API');
+// Serve static files from the client build directory
+const clientBuildPath = path.join(__dirname, '../../client/dist');
+app.use(express.static(clientBuildPath));
+
+// Handle SPA routing - return index.html for any unknown route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
